@@ -12,10 +12,11 @@ import numpy as np
 class TestDataLoader:
     _main_url = 'https://www.diabetesdaily.com'
     _forum_url = '/forum/forums/type-2-diabetes.14/'
+    
     def test_scrape_all(self):
         database_io  = DatabaseIO()
         database_io.execute('truncate table documents')
-        data_loader = DataLoader(self._main_url, self._forum_url, 2)
+        data_loader = DataLoader(self._main_url, self._forum_url, 1848,1)
         # get a count of items loaded
         threads_added = data_loader.scrape_all()
         print('Threads Added: ' + str(threads_added))
