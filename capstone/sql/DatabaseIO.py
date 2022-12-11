@@ -35,8 +35,8 @@ class DatabaseIO:
             self.commit()
         self._conn.close()
 
-    def execute(self, sql, params=None):
-        self._cursor.execute(sql, params or ())
+    def execute(self, sql, params=None, multi=False):
+        self._cursor.execute(sql, params or (), multi)
 
     def fetch_all(self):
         return self._cursor.fetchall()
@@ -46,7 +46,7 @@ class DatabaseIO:
 
     def query(self, sql, params=None):
         self._cursor.execute(sql, params or ())
-        return self.fetchall()
+        return self.fetch_all()
 
     def read_to_dataframe(self, sql):
         return pd.read_sql(sql, self._conn)
