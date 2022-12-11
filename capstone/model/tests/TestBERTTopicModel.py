@@ -3,7 +3,7 @@ import pytest
 sys.path.append('..')
 sys.path.append('../../sql')
 
-from TopicModel import TopicModel
+from BERTTopicModel import BERTTopicModel
 
 from DatabaseIO import DatabaseIO
 import pandas as pd
@@ -13,7 +13,7 @@ class TestTopicModel:
     
     def test_all(self):
         db_io = DatabaseIO()
-        model = TopicModel(db_io)
+        model = BERTTopicModel(db_io)
         model.pre_process()
         model.train()
         #send list of documents to the function

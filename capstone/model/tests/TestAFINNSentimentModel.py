@@ -3,7 +3,7 @@ import pytest
 sys.path.append('..')
 sys.path.append('../../sql')
 
-from TopicModel import TopicModel
+from AFINNSentimentModel import AFINNSentimentModel
 
 from DatabaseIO import DatabaseIO
 import pandas as pd
@@ -13,9 +13,9 @@ class TestTopicModel:
     
     def test_all(self):
         db_io = DatabaseIO()
-        model = TopicModel(db_io)
+        model = AFINNSentimentModel(db_io)
         model.pre_process()
         model.train()
         #send list of documents to the function
-        model.predict(list("I dont like taking metformin.  This causes severe issues for me!"))
+        model.predict("I dont like taking metformin.  This causes severe issues for me!")
         assert True

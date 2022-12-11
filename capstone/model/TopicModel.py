@@ -7,7 +7,12 @@ import pandas as pd
 import nltk
 import tqdm
 import gensim
-
+import pickle
+import base64
+from datetime import datetime
+'''
+Default topic model using gensim and LDA
+'''
 class TopicModel(ModelInterface):
 
     def __init__(self, db_io ) -> None:
@@ -68,8 +73,9 @@ class TopicModel(ModelInterface):
         print('Total number of documents:', len(self._bow_corpus))
 
     def train(self):
+        # TODO: Put hyperparameter tuning here by taking parameters to this class
         print('train')
-        TOTAL_TOPICS = 100
+        TOTAL_TOPICS = 10
         lda_model = gensim.models.LdaModel(corpus=self._bow_corpus, id2word=self._dictionary, chunksize=1740, 
                                         alpha='auto', eta='auto', random_state=42,
                                         iterations=500, num_topics=TOTAL_TOPICS, 
@@ -77,7 +83,7 @@ class TopicModel(ModelInterface):
         for topic_id, topic in lda_model.print_topics(num_topics=TOTAL_TOPICS, num_words=20):
             print('Topic #'+str(topic_id+1)+':')
             print(topic)
-            print()                                        
+            print()
         # model quality
         cv_coherence_model_lda = gensim.models.CoherenceModel(model=lda_model, corpus=self._bow_corpus, 
                                                             texts=self._norm_corpus_bigrams,
@@ -96,8 +102,75 @@ class TopicModel(ModelInterface):
         print('Avg. Coherence Score (Cv):', avg_coherence_cv)
         print('Avg. Coherence Score (UMass):', avg_coherence_umass)
         print('Model Perplexity:', perplexity)            
-        # save pickled model so that it can be pulled up for predictions
+        # pickle model save it to the database along with training date and metrics.
+        # We will also need to pickle  bow, dictionary and other supporting stuff.
+        pickle_lda_model = base64.b64encode(pickle.dumps(lda_model))
+        pickle_bow_corpus = base64.b64encode(pickle.dumps(self._bow_corpus))
+        pickle__dictionary = base64.b64encode(pickle.dumps(self._dictionary))
+        print(len(pickle_lda_model))
+        print(len(pickle_bow_corpus))
 
-    def predict(self):
-        #How do we get topics from individual document from now on?
-        pass
+        add_model = 'insert into models (type,model_pkl,bow_pkl, dictionary_pkl, avg_coherence_cv, avg_coherence_umass, model_perplexity, updated_dt, isCurrent)  \
+                        VALUES (%(type)s, %(model_pkl)s, %(bow_pkl)s, %(dictionary_pkl)s, %(avg_coherence_cv)s, %(avg_coherence_umass)s, %(model_perplexity)s, %(updated_dt)s, %(isCurrent)s );'
+
+        self._db_io.execute('update models set isCurrent = 0 where isCurrent = 1 and type = \'topicLDA\';' )
+        self._db_io.commit()
+        
+        params = dict()
+        params['type'] = 'topicLDA'
+        params['model_pkl'] = pickle_lda_model
+        params['bow_pkl'] = pickle_bow_corpus
+        params['dictionary_pkl'] = pickle__dictionary
+        params['avg_coherence_cv'] = str(avg_coherence_cv)
+        params['avg_coherence_umass'] = str(avg_coherence_umass)
+        params['model_perplexity'] = str(perplexity)        
+        params['updated_dt'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
+        params['isCurrent'] = '1'       #TODO - evaluate against current models in the db and check the model params and only then make it current.
+        
+        self._db_io.execute(add_model, params )
+        self._db_io.commit()
+        
+
+
+
+    def predict(self, unseen_doc):
+        print('predict')
+        # read the current model from database.
+        get_model = 'select * from models where isCurrent = 1 and type=\'topicLDA\''
+        rows = self._db_io.query(get_model)
+        if (len(rows) != 1):
+            print('more than one or no active model - how did this happen?')
+            return
+        #get model pickle from rows and see if we can rehydrate the model from the pickle
+        print(type(rows))
+        print(len(rows))
+        
+        lda_model = pickle.loads(base64.b64decode(rows[0][2]))
+        #bow_corpus = pickle.loads(base64.b64decode(rows[0][3]))
+        dictionary = pickle.loads(base64.b64decode(rows[0][4]))
+
+        #get the new document and find topics in it
+        norm_documents = self.__normalize_corpus(unseen_doc)
+        bigram = gensim.models.Phrases(norm_documents, min_count=20, threshold=20) 
+
+        bigram_model = gensim.models.phrases.Phraser(bigram)
+        
+
+        norm_corpus_bigrams = [bigram_model[doc] for doc in norm_documents]
+        new_doc_bow_corpus = [dictionary.doc2bow(text) for text in norm_corpus_bigrams]
+        TOTAL_TOPICS = 10
+        '''
+        lda_model = gensim.models.LdaModel(new_doc_bow_corpus, id2word=dictionary, chunksize=1740, 
+                                        alpha='auto', eta='auto', random_state=42,
+                                        iterations=500, num_topics=TOTAL_TOPICS, 
+                                        passes=20, eval_every=None)        
+        '''
+        #lda_model[new_doc_bow_corpus]
+        print(lda_model.get_document_topics(new_doc_bow_corpus))
+        
+        for topic_id, topic in lda_model.print_topics(num_topics=10, num_words=20):
+            print('Topic #'+str(topic_id+1)+':')
+            print(topic)
+            print()        
+        
+        

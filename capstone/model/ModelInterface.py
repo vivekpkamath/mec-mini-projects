@@ -14,6 +14,6 @@ class ModelInterface:
     def train(self):
         pass
 
-    def predict(self):
+    def predict(self,unseen_doc):
         pass
 

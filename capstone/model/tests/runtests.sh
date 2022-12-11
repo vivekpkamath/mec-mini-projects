@@ -6,4 +6,7 @@ export DB_PWD='Q1!w2@e3#r4$'
 # echo $DB_SERVER
 # echo $DB_USER
 # echo $DB_PWD
-pytest -s -q TestTopicModel.py
+#pytest -s -q TestTopicModel.py
+#pytest -s -q TestBERTTopicModel.py
+#pytest -s -q TestAFINNSentimentModel.py
+pytest -s -q TestVADERSentimentModel.py
