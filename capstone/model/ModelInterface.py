@@ -1,12 +1,12 @@
 import sys
 sys.path.append('../sql')
-from DatabaseIO import DatabaseIO 
+from DAL import DAL 
 
 
 class ModelInterface:
 
-    def __init__(self, db_io ) -> None:
-        self._db_io = db_io
+    def __init__(self) -> None:
+        self._dal = DAL()
         
     def pre_process(self):
         pass

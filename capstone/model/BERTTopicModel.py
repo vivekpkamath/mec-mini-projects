@@ -14,8 +14,8 @@ from datetime import datetime
 
 class BERTTopicModel(ModelInterface):
 
-    def __init__(self, db_io ) -> None:
-        super().__init__(db_io)
+    def __init__(self) -> None:
+        super().__init__()
         
     def pre_process(self):
         print('pre_process')
@@ -28,7 +28,7 @@ class BERTTopicModel(ModelInterface):
         pip install bertopic[use]
         '''
         #load all documents from database 
-        self._document_df = self._db_io.read_to_dataframe('select * from documents;')
+        self._document_df = self._dal.getAllDocuments()
         #accept the default language of english
         print(self._document_df.head(5))
         self._model = BERTopic(language='english')
@@ -37,7 +37,8 @@ class BERTTopicModel(ModelInterface):
 
     def train(self):
         print('train')
-        self._model.fit_transform(self._document_df['title'].to_list())
+
+        self._model.fit_transform(self._document_df['body'].to_list())
         print(self._model.get_topic_freq().head(10))
         print(self._model.get_topic(0)[:10])
         print(self._model.get_topic_info())
@@ -45,11 +46,25 @@ class BERTTopicModel(ModelInterface):
         print('------------------------------------------')
         print(self._model.get_topics())
         print('------------------------------------------')
-        #persist model in database
+        #persist model in database and add topics
+        pickle_bert_model = base64.b64encode(pickle.dumps(self._model))
+        pickle_bow_corpus = 'N/A'
+        pickle_dictionary = 'N/A'
+        #store model
+        model_id = self._dal.addOneModel('BERTopic', pickle_bert_model, pickle_bow_corpus, pickle_dictionary)
+        for topic in self._model.get_topics():
+            self._dal.addTopicforModel(model_id, topic)
+        #User OCTIS to get metrics and store them
+
 
     def predict(self, unseen_doc):
         print('predict')
         #read model from database
+        rows = self._dal.getCurrentModelOfType('BERTopic')
+        if (len(rows) != 1):
+            return
+        self._model = pickle.loads(base64.b64decode(rows[0][2]))
+
         predicted_topics, predicted_probs = self._model.transform(unseen_doc)
         print(predicted_topics)
         print(predicted_probs)

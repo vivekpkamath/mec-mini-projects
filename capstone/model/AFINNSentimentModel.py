@@ -15,8 +15,8 @@ from datetime import datetime
 
 class AFINNSentimentModel(ModelInterface):
 
-    def __init__(self, db_io ) -> None:
-        super().__init__(db_io)
+    def __init__(self ) -> None:
+        super().__init__()
         
     def pre_process(self):
         #load all documents from database 

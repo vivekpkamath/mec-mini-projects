@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append('../sql')
-from DatabaseIO import DatabaseIO 
+from DAL import DAL
 from ModelInterface import ModelInterface
 import pandas as pd
 import nltk
@@ -15,8 +15,8 @@ Default topic model using gensim and LDA
 '''
 class TopicModel(ModelInterface):
 
-    def __init__(self, db_io ) -> None:
-        super().__init__(db_io)
+    def __init__(self ) -> None:
+        super().__init__()
 
 
     def __normalize_corpus(self, documents):
@@ -45,7 +45,7 @@ class TopicModel(ModelInterface):
         #nltk.download('omw-1.4')
         
         #load all documents from database
-        document_df = self._db_io.read_to_dataframe('select * from documents;')
+        document_df = self._dal.getAllDocuments()
         self._norm_documents = self.__normalize_corpus(document_df['body'].to_list())
         #create bigram phrases
         #print(self._norm_documents)
@@ -80,10 +80,12 @@ class TopicModel(ModelInterface):
                                         alpha='auto', eta='auto', random_state=42,
                                         iterations=500, num_topics=TOTAL_TOPICS, 
                                         passes=20, eval_every=None)
+        '''
         for topic_id, topic in lda_model.print_topics(num_topics=TOTAL_TOPICS, num_words=20):
             print('Topic #'+str(topic_id+1)+':')
             print(topic)
             print()
+        '''
         # model quality
         cv_coherence_model_lda = gensim.models.CoherenceModel(model=lda_model, corpus=self._bow_corpus, 
                                                             texts=self._norm_corpus_bigrams,
@@ -106,41 +108,29 @@ class TopicModel(ModelInterface):
         # We will also need to pickle  bow, dictionary and other supporting stuff.
         pickle_lda_model = base64.b64encode(pickle.dumps(lda_model))
         pickle_bow_corpus = base64.b64encode(pickle.dumps(self._bow_corpus))
-        pickle__dictionary = base64.b64encode(pickle.dumps(self._dictionary))
+        pickle_dictionary = base64.b64encode(pickle.dumps(self._dictionary))
         print(len(pickle_lda_model))
         print(len(pickle_bow_corpus))
-
-        add_model = 'insert into models (type,model_pkl,bow_pkl, dictionary_pkl, avg_coherence_cv, avg_coherence_umass, model_perplexity, updated_dt, isCurrent)  \
-                        VALUES (%(type)s, %(model_pkl)s, %(bow_pkl)s, %(dictionary_pkl)s, %(avg_coherence_cv)s, %(avg_coherence_umass)s, %(model_perplexity)s, %(updated_dt)s, %(isCurrent)s );'
-
-        self._db_io.execute('update models set isCurrent = 0 where isCurrent = 1 and type = \'topicLDA\';' )
-        self._db_io.commit()
-        
-        params = dict()
-        params['type'] = 'topicLDA'
-        params['model_pkl'] = pickle_lda_model
-        params['bow_pkl'] = pickle_bow_corpus
-        params['dictionary_pkl'] = pickle__dictionary
-        params['avg_coherence_cv'] = str(avg_coherence_cv)
-        params['avg_coherence_umass'] = str(avg_coherence_umass)
-        params['model_perplexity'] = str(perplexity)        
-        params['updated_dt'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
-        params['isCurrent'] = '1'       #TODO - evaluate against current models in the db and check the model params and only then make it current.
-        
-        self._db_io.execute(add_model, params )
-        self._db_io.commit()
-        
-
+        #store model
+        model_id = self._dal.addOneModel('topicLDA', pickle_lda_model, pickle_bow_corpus, pickle_dictionary)
+        #store metric
+        self._dal.addModelMetric(model_id[0][0], 'Avg. Coherence Score (Cv)', str(avg_coherence_cv))
+        self._dal.addModelMetric(model_id[0][0], 'Avg. Coherence Score (UMass)', str(avg_coherence_umass))
+        self._dal.addModelMetric(model_id[0][0], 'Model Perplexity', str(perplexity))
+        for topic_id, topic in lda_model.print_topics(num_topics=TOTAL_TOPICS, num_words=20):
+            print('Topic #'+str(topic_id+1)+':')
+            print(topic)
+            print()
+            self._dal.addTopicforModel(model_id, topic)
 
 
     def predict(self, unseen_doc):
         print('predict')
         # read the current model from database.
-        get_model = 'select * from models where isCurrent = 1 and type=\'topicLDA\''
-        rows = self._db_io.query(get_model)
+        rows = self._dal.getCurrentModelOfType('topicLDA')
         if (len(rows) != 1):
-            print('more than one or no active model - how did this happen?')
             return
+        
         #get model pickle from rows and see if we can rehydrate the model from the pickle
         print(type(rows))
         print(len(rows))
@@ -171,6 +161,8 @@ class TopicModel(ModelInterface):
         for topic_id, topic in lda_model.print_topics(num_topics=10, num_words=20):
             print('Topic #'+str(topic_id+1)+':')
             print(topic)
-            print()        
+            print()
+            
+
         
         

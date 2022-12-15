@@ -17,8 +17,8 @@ from datetime import datetime
 
 class VADERSentimentModel(ModelInterface):
 
-    def __init__(self, db_io ) -> None:
-        super().__init__(db_io)
+    def __init__(self) -> None:
+        super().__init__()
 
     def analyze_sentiment_vader_lexicon(self, doc, 
                                         threshold=0.1,
