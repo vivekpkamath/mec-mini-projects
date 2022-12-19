@@ -16,8 +16,8 @@ class DatabaseIO:
     def __init__(self):
         logging.debug('database_io::__init__')
         #create db connection
-        self._conn = connection.MySQLConnection(user = os.getenv(self.ENV_DB_USER), password = os.getenv(self.ENV_DB_PWD),
-                                host=os.getenv(self.ENV_DB_SERVER),database=os.getenv(self.ENV_DB_NAME))
+        self._conn = connection.MySQLConnection(user = os.environ.get(self.ENV_DB_USER), password = os.environ.get(self.ENV_DB_PWD),
+                                host=os.environ.get(self.ENV_DB_SERVER),database=os.environ.get(self.ENV_DB_NAME))
         self._cursor = self._conn.cursor()
         
     def __enter__(self):
@@ -36,7 +36,7 @@ class DatabaseIO:
         self._conn.close()
 
     def execute(self, sql, params=None, multi=False):
-        self._cursor.execute(sql, params or (), multi)
+        return self._cursor.execute(sql, params or (), multi)
 
     def fetch_all(self):
         return self._cursor.fetchall()

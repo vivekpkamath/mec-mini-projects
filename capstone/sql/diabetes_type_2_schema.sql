@@ -23,6 +23,7 @@ CREATE TABLE if not exists model_jobs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     job_dt DATETIME,
     job_type INT,
+    model_type varchar(255),
     job_processed INT,
     comment varchar(255)
 );

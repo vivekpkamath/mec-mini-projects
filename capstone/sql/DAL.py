@@ -1,7 +1,7 @@
 from DatabaseIO import DatabaseIO
 from datetime import datetime
 import pandas as pd
-
+import sys
 '''
 Data Access Layer for all models and such.  This will keep 
 everything abstracted from all applications.  Primary interface
@@ -108,21 +108,38 @@ class DAL:
     '''
         Jobs DAL Section
     '''
-    def addModelJob(self, job_dt, job_type, comment):
-
-        add_job = 'insert into model_jobs (job_dt, job_type, job_processed, comment) values \
-                    (%(job_dt)s, %(job_type)s, 0, %(comment)s); \
+    def addModelJob(self, job_dt, job_type, model_type, comment):
+        #job_type  1 = training topic 2 = scoring sentiment on training data
+        add_job = 'insert into model_jobs (job_dt, job_type, model_type, job_processed, comment) values \
+                    (%(job_dt)s, %(job_type)s, %(model_type)s, 0, %(comment)s); \
                     select LAST_INSERT_ID();'
         params = dict()
         params['job_dt'] = job_dt
         params['job_type'] = job_type
+        params['model_type'] = model_type
         params['comment'] = comment
-        self._db_io.execute(add_job, params )
+        print(add_job, file=sys.stderr)
+        print(params, file=sys.stderr)
+        row = None
+        results = self._db_io.execute(add_job, params, multi=True)
+        print(results, file=sys.stderr)
+        for result in results:
+            if result.with_rows:
+                row = result.fetchall()
+
         self._db_io.commit()
-        return self._db_io.fetch_one()
         
-    def getUnprocessedModelJobs(self):
-        return self._db_io.query('select * from model_jobs where job_processed = 0;')
+        
+        print(row, file=sys.stderr)
+        if row is not None:
+            return row[0]
+        return None
+        
+    def getAllJobs(self):
+        return self._db_io.query('select * from model_jobs order by job_dt;')
+
+    def getFirstUnprocessedModelJobs(self):
+        return self._db_io.query('select * from model_jobs where job_processed = 0 order by job_dt ASC LIMIT 1;')
         
 
     def getProcessedModelJobs(self):
@@ -135,3 +152,19 @@ class DAL:
         self._db_io.execute(update_job)
         self._db_io.commit()        
         
+    '''
+        Sentiment DAL Section
+    '''
+
+    def addSentiment(self, model_id, document_id, sentiment):
+        add_sentiment = 'insert into sentiment (sentiment, model_id, document_id) VALUES \
+                            values (%(sentiment)s, %(model_id)s, %document_id)s); \
+                            select LAST_INSERT_ID();'
+        params = Dict()
+        params['sentiment'] = sentiment
+        params['model_id'] = model_id
+        params['document_id'] = document_id
+
+        self._db_io.execute(add_sentiment, params )
+        self._db_io.commit()
+        return self._db_io.fetch_one()
