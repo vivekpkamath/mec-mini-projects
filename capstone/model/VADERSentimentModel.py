@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append('../sql')
-from DatabaseIO import DatabaseIO 
 from ModelInterface import ModelInterface
 import text_normalizer as tn
 import pandas as pd
@@ -29,16 +25,16 @@ class VADERSentimentModel(ModelInterface):
         #doc = tn.expand_contractions(doc)
         
         # analyze the sentiment for doc
-        self._model = SentimentIntensityAnalyzer()
+        
         scores = self._model.polarity_scores(doc)
         # get aggregate scores and final sentiment
         agg_score = scores['compound']
         if agg_score > threshold:
-            final_sentiment = 'positive' 
+            final_sentiment = 1 
         elif agg_score < threshold:
-            final_sentiment = 'negative'
+            final_sentiment = -1
         else:
-            final_sentiment = 'neutral'
+            final_sentiment = 0
         if verbose:
             # display detailed sentiment statistics
             positive = str(round(scores['pos'], 2)*100)+'%'
@@ -60,23 +56,28 @@ class VADERSentimentModel(ModelInterface):
         #nltk.download('vader_lexicon')
 
         #load all documents from database 
-        self._document_df = self._db_io.read_to_dataframe('select * from documents LIMIT 1000;')
+        self._document_df = self._dal.getAllDocuments()
+        
         #accept the default language of english
         print(self._document_df.head(5))
         self._model = SentimentIntensityAnalyzer()
-        
 
     def train(self):
         print('train')
+
+        #
+        #There is no need to store the sentiment model.  It has not been trained
+        #but we just create dummy record
+        #
+        model_id = self._dal.addOneModel('VADERSentiment', "", "", "")       
+        
         #Let's get sentiment on all documents
         #and print them out
         # compute scores (polarity) and labels
         print(self._document_df.shape[0])
-        for doc in self._document_df['body']:
-            pred = self.analyze_sentiment_vader_lexicon(doc, 0.4, verbose=False )
-            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            print(doc, pred)
-            print('------------------------------------------------------------------------------------')
+        for row in self._document_df.itertuples():
+            score = self.analyze_sentiment_vader_lexicon(row.body, 0.4, verbose=False )
+            self._dal.addSentiment(model_id, row.id, sentiment)
 
     def predict(self,unseen_doc):
         pred = self.analyze_sentiment_vader_lexicon(unseen_doc, 0.4, verbose=False )

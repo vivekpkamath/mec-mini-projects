@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append('../sql')
-from DAL import DAL
 from ModelInterface import ModelInterface
 import pandas as pd
 import nltk

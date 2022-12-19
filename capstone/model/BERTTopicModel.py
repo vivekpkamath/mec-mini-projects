@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append('../sql')
-from DatabaseIO import DatabaseIO 
 from ModelInterface import ModelInterface
 import pandas as pd
 import nltk
