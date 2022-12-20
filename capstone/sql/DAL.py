@@ -16,7 +16,7 @@ class DAL:
         Documents DAL Section
     '''
     def getAllDocuments(self):
-        return self._db_io.read_to_dataframe('select * from documents;')
+        return self._db_io.read_to_dataframe('select * from documents LIMIT 100;')
 
     def getOneDocument(self, id):
         params = dict()
@@ -29,7 +29,7 @@ class DAL:
     def getCurrentModelOfType(self, model_type):
         get_model = 'select * from models where isCurrent = 1 and type=%(model_type)s'
         params = dict()
-        params['type'] = model_type
+        params['model_type'] = model_type
         rows =  self._db_io.query(get_model, params=params)
         if (len(rows) != 1):
             print('more than one or no active model - how did this happen?')
@@ -40,6 +40,8 @@ class DAL:
         params['type'] = model_type
         return self._db_io.query('select id from models where isCurrent=1 and type = %(model_type)s',params)
         
+    def getAllCurrentModels(self):
+        return self._db_io.query('select * from models where isCurrent=1')
 
     def addOneModel(self, model_type, model_pkl, bow_pkl, dictionary_pkl):
         add_model = 'insert into models (type,model_pkl,bow_pkl, dictionary_pkl, updated_dt, isCurrent)  \
@@ -47,7 +49,7 @@ class DAL:
                         select LAST_INSERT_ID();'
         update_current = 'update models set isCurrent = 0 where isCurrent = 1 and type = %(model_type)s;'
         update_param = dict()
-        params['type'] = model_type
+        update_param['model_type'] = model_type
         self._db_io.execute( update_current, update_param)
         self._db_io.commit()
 
@@ -56,12 +58,22 @@ class DAL:
         params['model_pkl'] = model_pkl
         params['bow_pkl'] = bow_pkl
         params['dictionary_pkl'] = dictionary_pkl
-        params['updated_dt'] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z')
+        params['updated_dt'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         params['isCurrent'] = '1'      
+        
+        row = None
+        results = self._db_io.execute(add_model, params, multi=True)
+        print(results, file=sys.stderr)
+        for result in results:
+            if result.with_rows:
+                row = result.fetchall()
 
-        self._db_io.execute(add_model, params )
         self._db_io.commit()
-        return self._db_io.fetch_one()
+        print(row, file=sys.stderr)
+        if row is not None:
+            return row[0][0]
+        return None
+
     '''
         Topics DAL Section
     '''
@@ -72,14 +84,27 @@ class DAL:
         
 
     def addTopicforModel(self, model_id, topic):
-        add_topic = 'insert into topics ( model_id, topic) values ( %(model_id)s, %(topic)s); \
-                        select LAST_INSERTED_ID();'
+        add_topic = 'insert into topics ( model_id, topic) values ( %(model_id)s, %(topic)s ); \
+                        select LAST_INSERT_ID();'
+                        
         params = dict()
         params['model_id'] = model_id
         params['topic'] = topic
-        self._db_io.execute(add_topic, params )
+        
+        row = None
+        results = self._db_io.execute(add_topic, params, multi=True)
+        print(results, file=sys.stderr)
+        for result in results:
+            if result.with_rows:
+                row = result.fetchall()
+
         self._db_io.commit()
-        return self._db_io.fetch_one()
+        
+        
+        print(row, file=sys.stderr)
+        if row is not None:
+            return row[0][0]
+        return None
 
     '''
         Metrics DAL Section
@@ -99,10 +124,20 @@ class DAL:
         params['model_id'] = model_id
         params['metric_name'] = metric_name
         params['metric_value'] = metric_value
+        row = None
+        results = self._db_io.execute(add_metric, params, multi=True)
+        print(results, file=sys.stderr)
+        for result in results:
+            if result.with_rows:
+                row = result.fetchall()
 
-        self._db_io.execute(add_metric, params )
         self._db_io.commit()
-        return self._db_io.fetch_one()
+        
+        
+        print(row, file=sys.stderr)
+        if row is not None:
+            return row[0][0]
+        return None
         
 
     '''
@@ -132,7 +167,7 @@ class DAL:
         
         print(row, file=sys.stderr)
         if row is not None:
-            return row[0]
+            return row[0][0]
         return None
         
     def getAllJobs(self):
@@ -157,14 +192,24 @@ class DAL:
     '''
 
     def addSentiment(self, model_id, document_id, sentiment):
-        add_sentiment = 'insert into sentiment (sentiment, model_id, document_id) VALUES \
-                            values (%(sentiment)s, %(model_id)s, %document_id)s); \
+        add_sentiment = 'insert into document_sentiment (sentiment, model_id, document_id, sentiment_update_dt) \
+                            values (%(sentiment)s, %(model_id)s, %(document_id)s, %(sentiment_update_dt)s ); \
                             select LAST_INSERT_ID();'
-        params = Dict()
+        
+        params = dict()
         params['sentiment'] = sentiment
         params['model_id'] = model_id
         params['document_id'] = document_id
+        params['sentiment_update_dt'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        row = None
+        results = self._db_io.execute(add_sentiment, params, multi=True)
+        print(results, file=sys.stderr)
+        for result in results:
+            if result.with_rows:
+                row = result.fetchall()
 
-        self._db_io.execute(add_sentiment, params )
         self._db_io.commit()
-        return self._db_io.fetch_one()
+        print(row, file=sys.stderr)
+        if row is not None:
+            return row[0][0]
+        return None
