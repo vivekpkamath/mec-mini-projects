@@ -36,19 +36,23 @@ class BERTTopicModel(ModelInterface):
 
         self._model.fit_transform(self._document_df['body'].to_list())
         print(self._model.get_topic_freq().head(10))
-        print(self._model.get_topic(0)[:10])
+        # print(self._model.get_topic(0)[:10])
         print(self._model.get_topic_info())
     
-        print('------------------------------------------')
-        print(self._model.get_topics())
-        print('------------------------------------------')
+        #print('------------------------------------------')
+        #print(self._model.get_topics())
+        #print('------------------------------------------')
         #persist model in database and add topics
         pickle_bert_model = base64.b64encode(pickle.dumps(self._model))
-        pickle_bow_corpus = 'N/A'
-        pickle_dictionary = 'N/A'
+        print(len(pickle_bert_model))
+        pickle_bow_corpus = ''
+        pickle_dictionary = ''
         #store model
         model_id = self._dal.addOneModel('BERTopic', pickle_bert_model, pickle_bow_corpus, pickle_dictionary)
         for topic in self._model.get_topics():
+            print(type(topic))
+            print(topic)
+            #get individual topics out of this model
             self._dal.addTopicforModel(model_id, topic)
         #User OCTIS to get metrics and store them
 
@@ -64,5 +68,7 @@ class BERTTopicModel(ModelInterface):
         predicted_topics, predicted_probs = self._model.transform(unseen_doc)
         print(predicted_topics)
         print(predicted_probs)
+        return predicted_topics, predicted_probs, self._model.get_topic_info()
+        
         
 

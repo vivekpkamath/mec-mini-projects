@@ -69,7 +69,7 @@ class VADERSentimentModel(ModelInterface):
         #There is no need to store the sentiment model.  It has not been trained
         #but we just create dummy record
         #
-        model_id = self._dal.addOneModel('VADERSentiment', "", "", "")       
+        model_id = self._dal.addOneModel('VADERSentiment', '', '', '')       
         
         #Let's get sentiment on all documents
         #and print them out
@@ -77,7 +77,7 @@ class VADERSentimentModel(ModelInterface):
         print(self._document_df.shape[0])
         for row in self._document_df.itertuples():
             score = self.analyze_sentiment_vader_lexicon(row.body, 0.4, verbose=False )
-            self._dal.addSentiment(model_id, row.id, sentiment)
+            self._dal.addSentiment(model_id, row.id, score)
 
     def predict(self,unseen_doc):
         pred = self.analyze_sentiment_vader_lexicon(unseen_doc, 0.4, verbose=False )

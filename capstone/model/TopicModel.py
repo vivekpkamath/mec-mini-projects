@@ -110,13 +110,14 @@ class TopicModel(ModelInterface):
         #store model
         model_id = self._dal.addOneModel('topicLDA', pickle_lda_model, pickle_bow_corpus, pickle_dictionary)
         #store metric
-        self._dal.addModelMetric(model_id[0][0], 'Avg. Coherence Score (Cv)', str(avg_coherence_cv))
-        self._dal.addModelMetric(model_id[0][0], 'Avg. Coherence Score (UMass)', str(avg_coherence_umass))
-        self._dal.addModelMetric(model_id[0][0], 'Model Perplexity', str(perplexity))
+        self._dal.addModelMetric(model_id, 'Avg. Coherence Score (Cv)', str(avg_coherence_cv))
+        self._dal.addModelMetric(model_id, 'Avg. Coherence Score (UMass)', str(avg_coherence_umass))
+        self._dal.addModelMetric(model_id, 'Model Perplexity', str(perplexity))
         for topic_id, topic in lda_model.print_topics(num_topics=TOTAL_TOPICS, num_words=20):
             print('Topic #'+str(topic_id+1)+':')
             print(topic)
             print()
+            #enc_topic = base64.b64encode(topic.encode('utf-8'))
             self._dal.addTopicforModel(model_id, topic)
 
 
@@ -158,6 +159,7 @@ class TopicModel(ModelInterface):
             print('Topic #'+str(topic_id+1)+':')
             print(topic)
             print()
+        return lda_model.print_topics(num_topics=10, num_words=20)
             
 
         
