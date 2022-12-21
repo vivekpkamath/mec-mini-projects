@@ -181,10 +181,10 @@ class DAL:
         return self._db_io.query('select * from model_jobs where job_processed = 1;')
 
     def updateModelJobToProcessed(self, job_id):
-        update_job = 'update model_jobs set job_processed = 1 where id = %(job_id)s'
+        update_job = 'update model_jobs set job_processed = 1 where id = %(job_id)s;'
         params = dict()
         params['job_id'] = job_id
-        self._db_io.execute(update_job)
+        self._db_io.execute(update_job, params=params)
         self._db_io.commit()        
         
     '''
