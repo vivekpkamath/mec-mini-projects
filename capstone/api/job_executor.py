@@ -3,7 +3,7 @@ sys.path.append('../sql')
 sys.path.append('../model')
 from DAL import DAL 
 from TopicModel import TopicModel
-from BERTTopiceModel import BERTTopicModel
+from BERTTopicModel import BERTTopicModel
 from AFINNSentimentModel import AFINNSentimentModel
 from VADERSentimentModel import VADERSentimentModel
 import schedule
@@ -21,7 +21,9 @@ def job():
         #based on the informaiton in record, kick off
         #appropriate model and preprocessing routine
         #
-        model_type = record['model_type']
+        print(record)
+        model_type = record[3]
+        print(model_type)
         if model_type == 'topicLDA':
             model = TopicModel()
         elif model_type == 'BERTopic':
@@ -33,10 +35,12 @@ def job():
         else:
             print('invalid model type ' + model_type)
             return
-
+        
         model.pre_process()
         model.train()
+        
         #update the database to indicate job's done
+        print(record[0])
         dal.updateModelJobToProcessed(record[0])
 
     #Next job will be picked up in the next run - this wakes up every minute

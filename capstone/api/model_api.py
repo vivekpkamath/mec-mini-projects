@@ -4,7 +4,7 @@ sys.path.append('../model')
 
 from DAL import DAL 
 from TopicModel import TopicModel
-from BERTTopiceModel import BERTTopicModel
+from BERTTopicModel import BERTTopicModel
 from AFINNSentimentModel import AFINNSentimentModel
 from VADERSentimentModel import VADERSentimentModel
 
@@ -70,11 +70,11 @@ def model():
 # API to to get list of model metrics for a given trained model
 # 
 @app.route('/model/metrics/', methods=['GET'])
-def model_metrics(model_id):
+def model_metrics():
     #get all metrics if any for a given model
     if request.method == 'GET':
         #Get all jobs from the database and send them back to the client
-        
+        model_id = request.args.get('model_id')
         if model_id is None:
             Flask.abort(404, 'Not Supported')
         else:

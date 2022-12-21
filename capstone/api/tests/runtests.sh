@@ -6,3 +6,8 @@ curl -X POST -H "Content-Type: application/json" -H "Accept: application/json" -
 curl -X POST -H "Content-Type: application/json" -H "Accept: application/json" -d '{"job_type":"2","model_type":"VADERSentiment", "comment":"test"}'   http://localhost:8080/model_job/
 echo -e "\n\n"
 curl -X GET -H "Content-type: application/json" -H "Accept: application/json" http://localhost:8080/model_job/
+echo -e "\n\n"
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" http://localhost:8080/model/metrics/?model_id=2
+echo -e "\n\n"
+curl -X GET -H "Content-type: application/json" -H "Accept: application/json" http://localhost:8080/model/
+
